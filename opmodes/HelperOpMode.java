@@ -14,15 +14,7 @@ import com.qualcomm.robotcore.util.Range;
 //
 
 /**
- * Provides a single hardware access point between custom op-modes and the
- * OpMode class for the Push Bot.
- *
- * This class prevents the custom op-mode from throwing an exception at runtime.
- * If any hardware fails to map, a warning will be shown via telemetry data,
- * calls to methods will fail, but will not cause the application to crash.
- *
- * @author SSI Robotics
- * @version 2015-08-13-20-04
+ * 5414 Helper Class to abstract some of the creation of and usage of hardware objects
  */
 public class HelperOpMode extends OpMode
 

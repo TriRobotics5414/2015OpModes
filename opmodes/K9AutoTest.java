@@ -33,6 +33,7 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
@@ -41,18 +42,19 @@ import com.qualcomm.robotcore.util.Range;
  * <p>
  * Enables control of the robot via the gamepad
  */
-public class K9TankDrive extends OpMode {
+public class K9AutoTest extends HelperOpMode {
 
 	/*
 	 * Note: the configuration of the servos is such that
 	 * as the arm servo approaches 0, the arm position moves up (away from the floor).
 	 * Also, as the claw servo approaches 0, the claw opens up (drops the game element).
 	 */
-    // TETRIX VALUES.
-    final static double ARM_MIN_RANGE  = 0.20;
-    final static double ARM_MAX_RANGE  = 0.90;
-    final static double CLAW_MIN_RANGE  = 0.20;
-    final static double CLAW_MAX_RANGE  = 0.7;
+	// TETRIX VALUES.
+
+
+
+    boolean firstTime = true;
+    int distance = 0;
 
 	// position of the arm servo.
 	double armPosition;
@@ -71,12 +73,20 @@ public class K9TankDrive extends OpMode {
 	Servo claw;
 	Servo arm;
 
+    final int  circumference = 13;
+    final int moveDistance = 26;
+
+
 	/**
 	 * Constructor
 	 */
-	public K9TankDrive() {
+	public K9AutoTest() {
 
 	}
+
+    public int convertDistanceToTicks(int distance){
+        return (1120/circumference)*distance;
+    }
 
 	/*
 	 * Code to run when the op mode is first enabled goes here
@@ -85,6 +95,8 @@ public class K9TankDrive extends OpMode {
 	 */
 	@Override
 	public void init() {
+
+
 		/*
 		 * Use the hardwareMap to get the dc motors and servos by name. Note
 		 * that the names of the devices must match the names used when you
@@ -95,22 +107,24 @@ public class K9TankDrive extends OpMode {
 		 * For the demo Tetrix K9 bot we assume the following,
 		 *   There are two motors "motor_1" and "motor_2"
 		 *   "motor_1" is on the right side of the bot.
-		 *   "motor_2" is on the left side of the bot.
+		 *   "motor_2" is on the left side of the bot and reversed.
 		 *   
 		 * We also assume that there are two servos "servo_1" and "servo_6"
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-		motorRight = hardwareMap.dcMotor.get("motor_2");
-		motorLeft = hardwareMap.dcMotor.get("motor_1");
-		motorLeft.setDirection(DcMotor.Direction.REVERSE);
-		
-		arm = hardwareMap.servo.get("servo_1");
-		claw = hardwareMap.servo.get("servo_6");
+		motorRight = setupMotor("motor_2", false);
+		motorLeft = setupMotor("motor_1", true);
+
+        arm = setupServo("servo_6");
+		claw = setupServo("servo_1");
 
 		// assign the starting position of the wrist and claw
 		armPosition = 0.2;
 		clawPosition = 0.2;
+
+        resetEncoders(motorRight);
+        resetEncoders(motorLeft);
 	}
 
 	/*
@@ -121,86 +135,36 @@ public class K9TankDrive extends OpMode {
 	@Override
 	public void loop() {
 
-		/*
-		 * Gamepad 1
-		 * 
-		 * Gamepad 1 controls the motors via the left stick, and it controls the
-		 * wrist/claw via the a,b, x, y buttons
-		 */
+        if(firstTime) {
 
-        // tank drive
-        // note that if y equal -1 then joystick is pushed all of the way forward.
-        float left = -gamepad1.left_stick_y;
-        float right = -gamepad1.right_stick_y;
+            distance = convertDistanceToTicks(moveDistance);
 
-		// clip the right/left values so that the values never exceed +/- 1
-		right = Range.clip(right, -1, 1);
-		left = Range.clip(left, -1, 1);
+            setupEncoders(motorRight, true);
+            setupEncoders(motorLeft, true);
 
-		// scale the joystick value to make it easier to control
-		// the robot more precisely at slower speeds.
-		right = (float)scaleInput(right);
-		left =  (float)scaleInput(left);
-		
-		// write the values to the motors
-		motorRight.setPower(right);
-		motorLeft.setPower(left);
+            motorRight.setTargetPosition(distance);
+            motorLeft.setTargetPosition(distance);
 
-		// update the position of the arm.
-		if (gamepad1.a) {
-			// if the A button is pushed on gamepad1, increment the position of
-			// the arm servo.
-			armPosition += armDelta;
-		}
-
-		if (gamepad1.y) {
-			// if the Y button is pushed on gamepad1, decrease the position of
-			// the arm servo.
-			armPosition -= armDelta;
-		}
-
-        // update the position of the claw
-        if (gamepad1.left_bumper) {
-            clawPosition += clawDelta;
+            motorRight.setPower(-0.5);
+            motorLeft.setPower(-0.5);
+            firstTime = false;
         }
 
-        if (gamepad1.left_trigger > 0.25) {
-            clawPosition -= clawDelta;
+        if(motorRight.getCurrentPosition() >= distance){
+            motorRight.setPower(0.0);
+            motorLeft.setPower(0.0);
+        }
+        if(motorRight.getPower() == 0.0){
+            arm.setPosition(.9);
+
+        } else {
+            arm.setPosition(.2);
         }
 
-        if (gamepad1.b) {
-            clawPosition -= clawDelta;
-        }
+        telemetry.addData("Left Motor power", motorLeft.getPower());
+        telemetry.addData("Right Motor power", motorRight.getPower());
 
-		// update the position of the claw
-		if (gamepad1.x) {
-			clawPosition += clawDelta;
-		}
 
-		if (gamepad1.b) {
-			clawPosition -= clawDelta;
-		}
-
-		// clip the position values so that they never exceed their allowed range.
-		armPosition = Range.clip(armPosition, ARM_MIN_RANGE, ARM_MAX_RANGE);
-		clawPosition = Range.clip(clawPosition, CLAW_MIN_RANGE, CLAW_MAX_RANGE);
-
-		// write position values to the wrist and claw servo
-		arm.setPosition(armPosition);
-		claw.setPosition(clawPosition);
-
-		/*
-		 * Send telemetry data back to driver station. Note that if we are using
-		 * a legacy NXT-compatible motor controller, then the getPower() method
-		 * will return a null value. The legacy NXT-compatible motor controllers
-		 * are currently write only.
-		 */
-
-		telemetry.addData("Text", "*** Robot Data***");
-        telemetry.addData("arm", "arm:  " + String.format("%.2f", armPosition));
-        telemetry.addData("claw", "claw:  " + String.format("%.2f", clawPosition));
-		telemetry.addData("left tgt pwr",  "left  pwr: " + String.format("%.2f", left));
-		telemetry.addData("right tgt pwr", "right pwr: " + String.format("%.2f", right));
 	}
 
 	/*
@@ -209,10 +173,11 @@ public class K9TankDrive extends OpMode {
 	 * @see com.qualcomm.robotcore.eventloop.opmode.OpMode#stop()
 	 */
 	@Override
-	public void stop() {
-
-	}
-	
+    public void stop() {
+        resetEncoders(motorRight);
+        resetEncoders(motorLeft);
+    }
+    	
 	/*
 	 * This method scales the joystick input so for low joystick values, the 
 	 * scaled value is less than linear.  This is to make it easier to drive

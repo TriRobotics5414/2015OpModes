@@ -45,11 +45,17 @@ public class Teleop extends HelperOpMode {
     DcMotor motorLeft;
     DcMotor collector;
     DcMotor scorer;
+    DcMotor lift;
 
+    Servo linearLift;
 
+    double FORWARD_COLLECTOR_POWER = 1.0;
+    double BACKWARD_COLLECTOR_POWER = -1.0;
+    double FORWARD_SCORER_POWER = 1.0;
+    double BACKWARD_SCORER_POWER = -1.0;
 
-
-
+    double LINEAR_LIFT_UP = .7;
+    double LINEAR_LIFT_DOWN = .2;
 
     /**
 	 * Constructor
@@ -72,10 +78,9 @@ public class Teleop extends HelperOpMode {
 
         collector = hardwareMap.dcMotor.get("collector");
         scorer = hardwareMap.dcMotor.get("scorer");
+        lift = hardwareMap.dcMotor.get("lift");
 
-
-
-
+        linearLift = hardwareMap.servo.get("linearLift");
     }
 
 	/*
@@ -87,18 +92,44 @@ public class Teleop extends HelperOpMode {
 	public void loop() {
 
         motorLeft.setPower(scaleInput(gamepad1.left_stick_y));
-        motorRight.setPower(scaleInput(gamepad1.left_stick_y));
+        motorRight.setPower(scaleInput(gamepad1.right_stick_y));
 
-        if (gamepad1.right_bumper){
-            scorer.setPower(1.0);
-
-
+        if (gamepad1.b){
+            scorer.setPower(FORWARD_SCORER_POWER);
         }
-        else if (false); {
-        scorer.setPower(0.0);
-
-
+        else if (gamepad1.x)
+        {
+            scorer.setPower(BACKWARD_SCORER_POWER);
         }
+        else{
+            scorer.setPower(0.0);
+        }
+        if (gamepad1.right_bumper) {
+            collector.setPower(FORWARD_COLLECTOR_POWER);
+        }
+        else if (gamepad1.left_bumper) {
+            collector.setPower(BACKWARD_COLLECTOR_POWER);
+        }
+        else {
+            collector.setPower(0.0);
+        }
+        if (gamepad1.y) {
+            linearLift.setPosition(LINEAR_LIFT_UP);
+        }
+        else if (gamepad1.a){
+            linearLift.setPosition(LINEAR_LIFT_DOWN);
+        }
+        if (gamepad1.right_trigger != 0){
+            lift.setPower(1.0);
+        }
+        else if (gamepad1.left_trigger != 0){
+            lift.setPower(-1.0);
+        }
+        else {
+            lift.setPower(0.0);
+        }
+    }
+
 
 
 	/*

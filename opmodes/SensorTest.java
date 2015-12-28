@@ -35,8 +35,12 @@ import android.util.Log;
 import com.kauailabs.navx.ftc.AHRS;
 import com.kauailabs.navx.ftc.navXPIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
+import com.qualcomm.robotcore.hardware.DigitalChannelController;
+import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import java.text.DecimalFormat;
@@ -57,47 +61,60 @@ import java.text.DecimalFormat;
  */
 
 public class SensorTest extends OpMode {
-    //DcMotor leftMotor;
-    //DcMotor rightMotor;
-
-    /* This is the port on the Core Device Interface Module        */
-    /* in which the navX-Model Device is connected.  Modify this  */
-    /* depending upon which I2C port you are using.               */
-    private final int NAVX_DIM_I2C_PORT = 0;
+    DcMotor idk;
+    //OpticalDistanceSensor ods;
+    //ColorSensor colorSensor;
     private AHRS navx_device;
     private navXPIDController yawPIDController;
-    private ElapsedTime runtime = new ElapsedTime();
-
     private final byte NAVX_DEVICE_UPDATE_RATE_HZ = 50;
 
-    private final double TARGET_ANGLE_DEGREES = 0.0;
-    private final double TOLERANCE_DEGREES = 2.0;
+    private final double TARGET_ANGLE_DEGREES = 90.0;
+    private final double TOLERANCE_DEGREES = .5;
     private final double MIN_MOTOR_OUTPUT_VALUE = -1.0;
     private final double MAX_MOTOR_OUTPUT_VALUE = 1.0;
     private final double YAW_PID_P = 0.005;
     private final double YAW_PID_I = 0.0;
     private final double YAW_PID_D = 0.0;
+    private final int NAVX_DIM_I2C_PORT = 0;
+    DecimalFormat df;
+    boolean completed = false;
+    DeviceInterfaceModule cdim;
 
     navXPIDController.PIDResult yawPIDResult;
-    DecimalFormat df;
 
+
+    /* This is the port on the Core Device Interface Module        */
+    /* in which the navX-Model Device is connected.  Modify this  */
+    /* depending upon which I2C port you are using.               */
+
+    public void start()
+    {
+        navx_device.zeroYaw();
+        yawPIDResult = new navXPIDController.PIDResult();
+    }
+    public void navxReset(double angle){
+        navx_device.zeroYaw();
+        yawPIDController.setSetpoint(angle);
+
+    }
     @Override
     public void init() {
-        //leftMotor = hardwareMap.dcMotor.get("left_drive");
-        //rightMotor = hardwareMap.dcMotor.get("right_drive");
-
-        navx_device = AHRS.getInstance(hardwareMap.deviceInterfaceModule.get("dim"),
-                NAVX_DIM_I2C_PORT,
-                AHRS.DeviceDataType.kProcessedData,
-                NAVX_DEVICE_UPDATE_RATE_HZ);
-
-        //rightMotor.setDirection(DcMotor.Direction.REVERSE);
+        cdim = hardwareMap.deviceInterfaceModule.get("DIM");
+        //cdim.setDigitalChannelMode(5, DigitalChannelController.Mode.OUTPUT);
+        idk = hardwareMap.dcMotor.get("idk");
+       // ods = hardwareMap.opticalDistanceSensor.get("ods");
+        //colorSensor = hardwareMap.colorSensor.get("color");
 
         /* If possible, use encoders when driving, as it results in more */
         /* predictable drive system response.                           */
         //leftMotor.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
         //rightMotor.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
 
+
+        navx_device = AHRS.getInstance(hardwareMap.deviceInterfaceModule.get("DIM"),
+                NAVX_DIM_I2C_PORT,
+                AHRS.DeviceDataType.kProcessedData,
+                NAVX_DEVICE_UPDATE_RATE_HZ);
         /* Create a PID Controller which uses the Yaw Angle as input. */
         yawPIDController = new navXPIDController( navx_device,
                 navXPIDController.navXTimestampedDataSource.YAW);
@@ -109,41 +126,38 @@ public class SensorTest extends OpMode {
         yawPIDController.setTolerance(navXPIDController.ToleranceType.ABSOLUTE, TOLERANCE_DEGREES);
         yawPIDController.setPID(YAW_PID_P, YAW_PID_I, YAW_PID_D);
         yawPIDController.enable(true);
-
         df = new DecimalFormat("#.##");
+
+
+        //leftMotor = hardwareMap.dcMotor.get("left_drive");
+        //rightMotor = hardwareMap.dcMotor.get("right_drive");
+
     }
+    /*public void colorTest(){
 
-    public double limit(double a) {
-        return Math.min(Math.max(a, MIN_MOTOR_OUTPUT_VALUE), MAX_MOTOR_OUTPUT_VALUE);
-    }
+        if((colorSensor.red())>(colorSensor.blue())){
+            idk.setPower(0.0);
+        }
+        else if((colorSensor.blue())>(colorSensor.red())){
+            idk.setPower(1.0);
+        }
+        telemetry.addData("Red  ", colorSensor.red());
+        telemetry.addData("Green", colorSensor.green());
+        telemetry.addData("Blue ", colorSensor.blue());
 
-    @Override
-    public void start() {
-        /* reset the navX-Model device yaw angle so that whatever direction */
-        /* it is currently pointing will be zero degrees.                   */
-        navx_device.zeroYaw();
-        yawPIDResult = new navXPIDController.PIDResult();
-    }
+    }*/
 
-    @Override
-    public void loop() {
-        /* Wait for new Yaw PID output values, then update the motors
-           with the new PID value with each new output value.
-         */
-
-        /* Drive straight forward at 1/2 of full drive speed */
+    public void turnTest(){
         double drive_speed = 0.5;
 
         if ( yawPIDController.isNewUpdateAvailable(yawPIDResult) ) {
             if ( yawPIDResult.isOnTarget() ) {
-                //leftMotor.setPower(drive_speed);
-                //rightMotor.setPower(drive_speed);
+                idk.setPower(drive_speed);
                 telemetry.addData("Motor Output",df.format(drive_speed) + ", " +
                         df.format(drive_speed));
             } else {
                 double output = yawPIDResult.getOutput();
-                //leftMotor.setPower(limit(drive_speed + output));
-                //rightMotor.setPower(limit(drive_speed - output));
+                idk.setPower(limit(drive_speed + output));
                 telemetry.addData("Motor Output", df.format(limit(drive_speed + output)) + ", " +
                         df.format(limit(drive_speed - output)));
             }
@@ -155,8 +169,74 @@ public class SensorTest extends OpMode {
         telemetry.addData("Yaw", df.format(navx_device.getYaw()));
     }
 
+    public void turnTest1(){
+        double drive_speed = 0.5;
+
+        if ( yawPIDController.isNewUpdateAvailable(yawPIDResult) ) {
+            if ( yawPIDResult.isOnTarget() ) {
+                drive_speed = 0;
+                idk.setPower(drive_speed);
+                completed = true;
+                telemetry.addData("Motor Output", df.format(drive_speed) + ", " +
+                        df.format(drive_speed));
+                navxReset(-90.0);
+            } else {
+                double output = yawPIDResult.getOutput();
+                idk.setPower(drive_speed);
+                telemetry.addData("Motor Output", df.format(limit(drive_speed + output)) + ", " +
+                        df.format(limit(drive_speed - output)));
+            }
+        } else {
+            /* No sensor update has been received since the last time  */
+            /* the loop() function was invoked.  Therefore, there's no */
+            /* need to update the motors at this time.                 */
+        }
+        telemetry.addData("Yaw", df.format(navx_device.getYaw()));
+    }
+
+    public void turnTest2(){
+        double drive_speed = 0.5;
+
+        if ( yawPIDController.isNewUpdateAvailable(yawPIDResult) ) {
+            if ( !yawPIDResult.isOnTarget() ) {
+                drive_speed = 0;
+                idk.setPower(drive_speed);
+
+                telemetry.addData("Motor Output", df.format(drive_speed) + ", " +
+                        df.format(drive_speed));
+
+            } else {
+                double output = yawPIDResult.getOutput();
+                idk.setPower(drive_speed);
+                telemetry.addData("Motor Output", df.format(limit(drive_speed + output)) + ", " +
+                        df.format(limit(drive_speed - output)));
+            }
+        } else {
+            /* No sensor update has been received since the last time  */
+            /* the loop() function was invoked.  Therefore, there's no */
+            /* need to update the motors at this time.                 */
+        }
+        telemetry.addData("Yaw", df.format(navx_device.getYaw()));
+    }
+
+    public double limit(double a) {
+        return Math.min(Math.max(a, MIN_MOTOR_OUTPUT_VALUE), MAX_MOTOR_OUTPUT_VALUE);
+    }
+    @Override
+    public void loop() {
+        if(!completed) {
+            turnTest1();
+        }
+        else if(completed){
+            turnTest2();
+        }
+
+
+
+
+    }
     @Override
     public void stop() {
-        navx_device.close();
+
     }
 }

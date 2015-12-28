@@ -52,15 +52,15 @@ public class HelperOpMode extends OpMode
      * @param motor created motor object
      */
     public void resetEncoders(DcMotor motor){
-        motor.setChannelMode(DcMotorController.RunMode.RESET_ENCODERS);
+        motor.setMode(DcMotorController.RunMode.RESET_ENCODERS);
     }
 
     public void setupEncoders(DcMotor motor, boolean encoderType){
         if(encoderType){
-            motor.setChannelMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+            motor.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
         }
         else{
-            motor.setChannelMode(DcMotorController.RunMode.RUN_TO_POSITION);
+            motor.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
         }
     }
     public Servo setupServo (String servoName){

@@ -2,6 +2,7 @@
 package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorController;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.Range;
 
@@ -16,10 +17,10 @@ public class Teleop extends HelperOpMode {
     DcMotor motorRight, motorLeft, spinner, belts, lift, winch;
 
     //Servo object variables
-    Servo linearLift, leftGate, rightGate, climberServo;
+    Servo linearLift, leftGate, rightGate, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow;
 
 
-    final static double LIFT_DELTA = .01;
+    final static double LIFT_DELTA = .001;
 
     //Motor power variables
     double FORWARD_COLLECTOR_POWER = 1.0;
@@ -36,6 +37,12 @@ public class Teleop extends HelperOpMode {
     double LEFT_GATE_DOWN = 0.0;
     double RIGHT_GATE_UP = .1;
     double RIGHT_GATE_DOWN = .7;
+    double LEFT_CLIMBER_UP = 0.0;
+    double LEFT_CLIMBER_DOWN = .7;
+    double RIGHT_CLIMBER_UP = .9;
+    double RIGHT_CLIMBER_DOWN = 0.0;
+    double CHURRO_UP = .8;
+    double CHURRO_DOWN = .1;
 
     double liftPosition = 0.2;
 
@@ -57,11 +64,15 @@ public class Teleop extends HelperOpMode {
     @Override
     public void init() {
 
+
         motorRight = hardwareMap.dcMotor.get("Right");
         motorLeft = hardwareMap.dcMotor.get("Left");
+        motorRight.setMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
+        motorLeft.setMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
         motorLeft.setDirection(DcMotor.Direction.REVERSE);
 
         spinner = hardwareMap.dcMotor.get("Spinner");
+        spinner.setDirection(DcMotor.Direction.REVERSE);
         belts = hardwareMap.dcMotor.get("Belts");
         lift = hardwareMap.dcMotor.get("Lift");
         winch = hardwareMap.dcMotor.get("Winch");
@@ -69,7 +80,14 @@ public class Teleop extends HelperOpMode {
         linearLift = hardwareMap.servo.get("linearLift");
         leftGate = hardwareMap.servo.get("leftGate");
         rightGate = hardwareMap.servo.get("rightGate");
-        climberServo = hardwareMap.servo.get("climberServo");
+        climberServoLeft = hardwareMap.servo.get("climberServoLeft");
+        climberServoRight = hardwareMap.servo.get("climberServoRight");
+        churro = hardwareMap.servo.get("churro");
+        churro.setPosition(CHURRO_UP);
+        climberRotate = hardwareMap.servo.get("climberRotate");
+        climberRotate.setPosition(.1);
+        climberElbow = hardwareMap.servo.get("climberElbow");
+        climberElbow.setPosition(1);
     }
 
     public double scorerMovement(){
@@ -102,9 +120,9 @@ public class Teleop extends HelperOpMode {
     public double linearLiftMovement() {
 
         //Linear Lift movement
-        if (gamepad2.dpad_up) {
+        if (gamepad1.dpad_up) {
             liftPosition += LIFT_DELTA;
-        } else if (gamepad2.dpad_down) {
+        } else if (gamepad1.dpad_down) {
             liftPosition -= LIFT_DELTA;
         }
         liftPosition = Range.clip(liftPosition, LINEAR_LIFT_DOWN, LINEAR_LIFT_UP);
@@ -142,13 +160,66 @@ public class Teleop extends HelperOpMode {
             currentValue = DOWN_LIFT_POWER;
         return currentValue;
     }
-    public double climberMovement (){
-        double currentValue = climberServo.getPosition();
 
-        if (gamepad1.dpad_up)
-            currentValue = RIGHT_GATE_UP;
-        else if (gamepad1.dpad_down)
-            currentValue = RIGHT_GATE_DOWN;
+
+    public double climberLeftMovement (){
+        double currentValue = climberServoLeft.getPosition();
+
+        if (gamepad1.dpad_left)
+            currentValue = LEFT_CLIMBER_UP;
+        else if (gamepad1.dpad_right)
+            currentValue = LEFT_CLIMBER_DOWN;
+        return currentValue;
+    }
+    public double climberRightMovement () {
+        double currentValue = climberServoRight.getPosition();
+
+        if (gamepad1.left_stick_button) {
+            currentValue = RIGHT_CLIMBER_UP;
+        }
+        else if (gamepad1.right_stick_button) {
+            currentValue = RIGHT_CLIMBER_DOWN;
+            return currentValue;
+        }
+        return currentValue;
+    }
+
+    public double churroMovement(){
+        double currentValue = churro.getPosition();
+        if (gamepad2.dpad_up)
+            currentValue = CHURRO_UP;
+        else if (gamepad2.dpad_down)
+            currentValue = CHURRO_DOWN;
+        return currentValue;
+
+    }
+
+    public double winchMovement(){
+        double currentValue = 0;
+
+        if (gamepad2.left_trigger > 0.3)
+            currentValue = gamepad2.left_trigger * -1;
+        else if (gamepad2.right_trigger > 0.3)
+            currentValue = gamepad2.right_trigger;
+        return currentValue;
+    }
+public double climberRotate(){
+    double currentValue = climberRotate.getPosition();
+    if (gamepad1.right_bumper) {
+         currentValue = .3;
+    } else if (gamepad1.left_bumper) {
+        currentValue = 0.0;
+    }
+    return currentValue;
+}
+
+    public double climberElbow() {
+        double currentValue = climberElbow.getPosition();
+        if (gamepad1.right_trigger > 0.2) {
+            currentValue = .1;
+        } else if (gamepad1.left_trigger > 0.2) {
+            currentValue = 1;
+        }
         return currentValue;
     }
     /*
@@ -162,21 +233,21 @@ public class Teleop extends HelperOpMode {
         //Drivetrain movement
         motorLeft.setPower(scaleInput(gamepad1.left_stick_y));
         motorRight.setPower(scaleInput(gamepad1.right_stick_y));
-
+        winch.setPower(winchMovement());
+        lift.setPower(liftMovement());
         belts.setPower(scorerMovement());
         spinner.setPower(collectorMovement());
+
         linearLift.setPosition(linearLiftMovement());
         leftGate.setPosition(leftGateMovement());
         rightGate.setPosition(rightGateMovement());
-        climberServo.setPosition(climberMovement());
+        climberServoLeft.setPosition(climberLeftMovement());
+        climberServoRight.setPosition(climberRightMovement());
+        churro.setPosition(churroMovement());
+        climberRotate.setPosition(climberRotate());
+        climberElbow.setPosition(climberElbow());
 
-        if (gamepad2.right_trigger != 0) {
-            winch.setPower(scaleInput(gamepad2.right_trigger));
-        }
-        else {
-            winch.setPower(scaleInput(gamepad2.left_trigger) * -1);
-        }
-        lift.setPower(liftMovement());
+        telemetry.addData("Lift Position: " + linearLift.getPosition(), "");
         telemetry.addData("Left Motor: " + motorLeft.getPower(), "Right Motor" + motorRight.getPower());
         telemetry.addData("Belts: " + belts.getPower(), "Spinner" + spinner.getPower());
         telemetry.addData("Left Gate: " + leftGate.getPosition(),"Right Gate: "+ rightGate.getPosition());

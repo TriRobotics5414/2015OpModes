@@ -14,10 +14,10 @@ import com.qualcomm.robotcore.util.Range;
 public class Teleop extends HelperOpMode {
 
     //Motor object variables
-    DcMotor motorRight, motorLeft, spinner, belts, lift, winch;
+    DcMotor motorRight, motorLeft, spinner, lift, winch;
 
     //Servo object variables
-    Servo linearLift, leftGate, rightGate, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow;
+    Servo linearLift, linearBlock, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow, colorSensorRight, colorSensorLeft;
 
 
     final static double LIFT_DELTA = .001;
@@ -33,18 +33,21 @@ public class Teleop extends HelperOpMode {
     //Servo position variables
     double LINEAR_LIFT_UP = .7;
     double LINEAR_LIFT_DOWN = .2;
-    double LEFT_GATE_UP = .5;
-    double LEFT_GATE_DOWN = 0.0;
-    double RIGHT_GATE_UP = .1;
-    double RIGHT_GATE_DOWN = .7;
     double LEFT_CLIMBER_UP = 0.0;
-    double LEFT_CLIMBER_DOWN = .7;
+    double LEFT_CLIMBER_DOWN = 1;
     double RIGHT_CLIMBER_UP = .9;
     double RIGHT_CLIMBER_DOWN = 0.0;
-    double CHURRO_UP = .8;
-    double CHURRO_DOWN = .1;
+    double CHURRO_UP = .1;
+    double CHURRO_DOWN = .8;
+    double LEFT_COLOR_UP = 0.0;
+    double RIGHT_COLOR_UP = 0.9;
+    double ROTATE_IN = 0.7;
+    double ROTATE_OUT = 0.4;
+    double ELBOW_DOWN = 0.2;
+    double ELBOW_UP = 1.0;
 
-    double liftPosition = 0.2;
+    double liftPosition = 0.0;
+    double linearBlockPosition = 0.0;
 
 
 
@@ -73,21 +76,24 @@ public class Teleop extends HelperOpMode {
 
         spinner = hardwareMap.dcMotor.get("Spinner");
         spinner.setDirection(DcMotor.Direction.REVERSE);
-        belts = hardwareMap.dcMotor.get("Belts");
         lift = hardwareMap.dcMotor.get("Lift");
         winch = hardwareMap.dcMotor.get("Winch");
 
         linearLift = hardwareMap.servo.get("linearLift");
-        leftGate = hardwareMap.servo.get("leftGate");
-        rightGate = hardwareMap.servo.get("rightGate");
+        linearBlock = hardwareMap.servo.get("linearBlock");
         climberServoLeft = hardwareMap.servo.get("climberServoLeft");
+        climberServoLeft.setDirection(Servo.Direction.REVERSE);
         climberServoRight = hardwareMap.servo.get("climberServoRight");
         churro = hardwareMap.servo.get("churro");
         churro.setPosition(CHURRO_UP);
         climberRotate = hardwareMap.servo.get("climberRotate");
-        climberRotate.setPosition(.1);
+        climberRotate.setPosition(ROTATE_IN);
         climberElbow = hardwareMap.servo.get("climberElbow");
-        climberElbow.setPosition(1);
+        climberElbow.setPosition(ELBOW_DOWN);
+        colorSensorLeft = hardwareMap.servo.get("colorSensorLeft");
+        colorSensorLeft.setPosition(LEFT_COLOR_UP);
+        colorSensorRight = hardwareMap.servo.get("colorSensorRight");
+        colorSensorRight.setPosition(RIGHT_COLOR_UP);
     }
 
     public double scorerMovement(){
@@ -128,28 +134,19 @@ public class Teleop extends HelperOpMode {
         liftPosition = Range.clip(liftPosition, LINEAR_LIFT_DOWN, LINEAR_LIFT_UP);
         return liftPosition;
     }
-    public double leftGateMovement() {
-        double currentValue = leftGate.getPosition();
+    public double linearBlockMovement() {
 
-        //Linear Lift movement
-        if (gamepad2.dpad_left) {
-            currentValue = LEFT_GATE_DOWN;
-        } else {
-            currentValue = LEFT_GATE_UP;
-        }
-        return currentValue;
-    }
-    public double rightGateMovement() {
-        double currentValue = rightGate.getPosition();
-
-        //Linear Lift movement
         if (gamepad2.dpad_right) {
-            currentValue = RIGHT_GATE_UP;
-        } else {
-            currentValue = RIGHT_GATE_DOWN;
+            linearBlockPosition += LIFT_DELTA;
+        } else if (gamepad2.dpad_left) {
+            linearBlockPosition -= LIFT_DELTA;
         }
-        return currentValue;
+        linearBlockPosition = Range.clip(linearBlockPosition, LINEAR_LIFT_DOWN, LINEAR_LIFT_UP);
+        return linearBlockPosition;
+
     }
+
+
     public double liftMovement () {
         double currentValue = 0;
 
@@ -205,10 +202,10 @@ public class Teleop extends HelperOpMode {
     }
 public double climberRotate(){
     double currentValue = climberRotate.getPosition();
-    if (gamepad1.right_bumper) {
-         currentValue = .3;
-    } else if (gamepad1.left_bumper) {
-        currentValue = 0.0;
+    if (gamepad1.left_bumper) {
+         currentValue = ROTATE_IN;
+    } else if (gamepad1.right_bumper) {
+        currentValue = ROTATE_OUT;
     }
     return currentValue;
 }
@@ -216,9 +213,9 @@ public double climberRotate(){
     public double climberElbow() {
         double currentValue = climberElbow.getPosition();
         if (gamepad1.right_trigger > 0.2) {
-            currentValue = .1;
+            currentValue = ELBOW_UP;
         } else if (gamepad1.left_trigger > 0.2) {
-            currentValue = 1;
+            currentValue = ELBOW_DOWN;
         }
         return currentValue;
     }
@@ -235,22 +232,24 @@ public double climberRotate(){
         motorRight.setPower(scaleInput(gamepad1.right_stick_y));
         winch.setPower(winchMovement());
         lift.setPower(liftMovement());
-        belts.setPower(scorerMovement());
         spinner.setPower(collectorMovement());
 
         linearLift.setPosition(linearLiftMovement());
-        leftGate.setPosition(leftGateMovement());
-        rightGate.setPosition(rightGateMovement());
         climberServoLeft.setPosition(climberLeftMovement());
         climberServoRight.setPosition(climberRightMovement());
         churro.setPosition(churroMovement());
         climberRotate.setPosition(climberRotate());
         climberElbow.setPosition(climberElbow());
+        linearBlock.setPosition(linearBlockMovement());
 
-        telemetry.addData("Lift Position: " + linearLift.getPosition(), "");
-        telemetry.addData("Left Motor: " + motorLeft.getPower(), "Right Motor" + motorRight.getPower());
-        telemetry.addData("Belts: " + belts.getPower(), "Spinner" + spinner.getPower());
-        telemetry.addData("Left Gate: " + leftGate.getPosition(),"Right Gate: "+ rightGate.getPosition());
+
+
+        telemetry.addData("climberServoLeft: " + climberServoLeft.getPosition(), "");
+        telemetry.addData("climberServoRight: " + climberServoRight.getPosition(), "");
+        telemetry.addData("colorSensorRight: " + colorSensorRight.getPosition(), "");
+        telemetry.addData("colorSensorLeft: " + colorSensorLeft.getPosition(), "");
+
+
 
     }
 

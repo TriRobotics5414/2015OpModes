@@ -35,6 +35,7 @@ import android.util.Log;
 import com.kauailabs.navx.ftc.AHRS;
 import com.kauailabs.navx.ftc.navXPIDController;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
@@ -61,8 +62,9 @@ import java.text.DecimalFormat;
  */
 
 public class SensorTest extends OpMode {
-    DcMotor idk;
-    //OpticalDistanceSensor ods;
+    DcMotor idk, left;
+    OpticalDistanceSensor ods;
+    AnalogInput sonar;
     //ColorSensor colorSensor;
     private AHRS navx_device;
     private navXPIDController yawPIDController;
@@ -99,11 +101,13 @@ public class SensorTest extends OpMode {
     }
     @Override
     public void init() {
+        sonar = hardwareMap.analogInput.get("sonar");
         cdim = hardwareMap.deviceInterfaceModule.get("DIM");
         //cdim.setDigitalChannelMode(5, DigitalChannelController.Mode.OUTPUT);
-        idk = hardwareMap.dcMotor.get("idk");
-       // ods = hardwareMap.opticalDistanceSensor.get("ods");
+        /*idk = hardwareMap.dcMotor.get("idk");
+        ods = hardwareMap.opticalDistanceSensor.get("ods");
         //colorSensor = hardwareMap.colorSensor.get("color");
+        left = hardwareMap.dcMotor.get("left");*/
 
         /* If possible, use encoders when driving, as it results in more */
         /* predictable drive system response.                           */
@@ -145,7 +149,7 @@ public class SensorTest extends OpMode {
         telemetry.addData("Green", colorSensor.green());
         telemetry.addData("Blue ", colorSensor.blue());
 
-    }*/
+    }*//*
 
     public void turnTest(){
         double drive_speed = 0.5;
@@ -162,9 +166,9 @@ public class SensorTest extends OpMode {
                         df.format(limit(drive_speed - output)));
             }
         } else {
-            /* No sensor update has been received since the last time  */
-            /* the loop() function was invoked.  Therefore, there's no */
-            /* need to update the motors at this time.                 */
+            *//* No sensor update has been received since the last time  *//*
+            *//* the loop() function was invoked.  Therefore, there's no *//*
+            *//* need to update the motors at this time.                 *//*
         }
         telemetry.addData("Yaw", df.format(navx_device.getYaw()));
     }
@@ -187,11 +191,21 @@ public class SensorTest extends OpMode {
                         df.format(limit(drive_speed - output)));
             }
         } else {
-            /* No sensor update has been received since the last time  */
-            /* the loop() function was invoked.  Therefore, there's no */
-            /* need to update the motors at this time.                 */
+            *//* No sensor update has been received since the last time  *//*
+            *//* the loop() function was invoked.  Therefore, there's no *//*
+            *//* need to update the motors at this time.                 *//*
         }
         telemetry.addData("Yaw", df.format(navx_device.getYaw()));
+    }
+
+    public void odsSensorTest(){
+        if(ods.getLightDetected() > 0.28){
+            left.setPower(0.0);
+        }
+        else {
+            left.setPower(1.0);
+        }
+        telemetry.addData("ods: ", ods.getLightDetected());
     }
 
     public void turnTest2(){
@@ -212,25 +226,19 @@ public class SensorTest extends OpMode {
                         df.format(limit(drive_speed - output)));
             }
         } else {
-            /* No sensor update has been received since the last time  */
-            /* the loop() function was invoked.  Therefore, there's no */
-            /* need to update the motors at this time.                 */
+            *//* No sensor update has been received since the last time  *//*
+            *//* the loop() function was invoked.  Therefore, there's no *//*
+            *//* need to update the motors at this time.                 *//*
         }
         telemetry.addData("Yaw", df.format(navx_device.getYaw()));
     }
 
     public double limit(double a) {
         return Math.min(Math.max(a, MIN_MOTOR_OUTPUT_VALUE), MAX_MOTOR_OUTPUT_VALUE);
-    }
+    }*/
     @Override
     public void loop() {
-        if(!completed) {
-            turnTest1();
-        }
-        else if(completed){
-            turnTest2();
-        }
-
+      telemetry.addData("sensor output", sonar.getValue());
 
 
 

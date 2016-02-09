@@ -58,6 +58,7 @@ public class FtcOpModeRegister implements OpModeRegister {
     manager.register("NullOp", NullOp.class);
     manager.register("Teleop", Teleop.class);
     manager.register("Autonomous", Autonomous.class);
+      manager.register("SensorTest", SensorTest.class);
     /*manager.register("MatrixK9TeleOp", MatrixK9TeleOp.class);
     manager.register("K9TeleOp", K9TeleOp.class);
     manager.register ("PushBotAuto", PushBotAuto.class);
@@ -94,6 +95,8 @@ public class FtcOpModeRegister implements OpModeRegister {
     //manager.register("PushBotDriveTouch", PushBotDriveTouch.java);
     //manager.register("PushBotIrSeek", PushBotIrSeek.java);
     //manager.register("PushBotSquare", PushBotSquare.java);
+      manager.register("NAVXTURN", NAVXTURN.class);
+      manager.register("linear", linear.class);
 
     
     

@@ -2,9 +2,11 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.kauailabs.navx.ftc.AHRS;
 import com.kauailabs.navx.ftc.navXPIDController;
+import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
+import com.qualcomm.robotcore.hardware.OpticalDistanceSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import java.text.DecimalFormat;
@@ -16,15 +18,17 @@ public class Autonomous extends HelperOpMode{
     //Motor Objects
     DcMotor right, left;
 
-    Servo buttonRight, buttonLeft, climberElbow, linearLift, climberRotate, climberServoLeft, climberServoRight;
+    Servo buttonRight, buttonLeft, climberElbow, linearLift, climberRotate, climberServoLeft, climberServoRight, colorSensorRight, colorSensorLeft;
 
     ColorSensor sensorRGB;
+
+    OpticalDistanceSensor ods;
 
     //Encoder Move Distances
     int STARTING_MOVE = 101;
     int MOVE_TO_BASKET = 24;
     int MOVE_FROM_BASKET = 1;
-    //int MOVE_TO_RAMP = 5;
+    int MOVE_TO_RAMP = 5;
     int MOVE_TO_PARK = 21;
     final double circumference = 6.5;
 
@@ -81,10 +85,18 @@ public class Autonomous extends HelperOpMode{
         climberRotate.setPosition(0.0);
         climberElbow = hardwareMap.servo.get("climberElbow");
         climberElbow.setPosition(1.0);
-
+        colorSensorLeft = hardwareMap.servo.get("colorSensorLeft");
+        colorSensorLeft.setPosition(0.0);
+        colorSensorRight = hardwareMap.servo.get("colorsensorRight");
+        colorSensorRight.setPosition(0.0);
+        AnalogInput distance = hardwareMap.analogInput.get("test");
+        distance.getValue();
+        cdim = hardwareMap.deviceInterfaceModule.get("DIM");
+        cdim.getAnalogInputValue(0);
         // get a reference to our ColorSensor object.
-        sensorRGB = hardwareMap.colorSensor.get("color");
+        //sensorRGB = hardwareMap.colorSensor.get("color");
 
+        //ods = hardwareMap.opticalDistanceSensor.get("ods");
         navx_device = AHRS.getInstance(hardwareMap.deviceInterfaceModule.get("DIM"),
                 NAVX_DIM_I2C_PORT,
                 AHRS.DeviceDataType.kProcessedData,
@@ -117,7 +129,6 @@ public class Autonomous extends HelperOpMode{
     }
 
     public void resetState(){
-        navx_device.zeroYaw();
         yawPIDResult = new navXPIDController.PIDResult();
 
         firstTime = true;
@@ -126,7 +137,6 @@ public class Autonomous extends HelperOpMode{
     }
 
     public void resetNavx(){
-        navx_device.zeroYaw();
         yawPIDResult = new navXPIDController.PIDResult();
     }
 
@@ -136,11 +146,13 @@ public class Autonomous extends HelperOpMode{
         resetNavx();
     }
 
-    public void driveStraight (int distance, double speed){
-        if(firstTime) {
+    public void driveStraight (int distance, double speed, boolean useOds) {
+        if (firstTime) {
 
             setupEncoders(right, true);
             setupEncoders(left, true);
+
+            yawPIDController.setSetpoint(0);
 
             right.setTargetPosition(distance);
             left.setTargetPosition(distance);
@@ -149,7 +161,7 @@ public class Autonomous extends HelperOpMode{
             left.setPower(speed);
             firstTime = false;
         }
-        if(!lastTime) {
+        if (!lastTime && yawPIDController.getSetpoint() == 0) {
             if (yawPIDController.isNewUpdateAvailable(yawPIDResult)) {
                 if (yawPIDResult.isOnTarget()) {
                     left.setPower(speed);
@@ -164,12 +176,20 @@ public class Autonomous extends HelperOpMode{
                             df.format(limit(speed - output)));
                 }
             }
+     /*   }
+        if (useOds){
+            if(ods.getLightDetected() > 0.7){
+                left.setPower(0.0);
+                right.setPower(0.0);
+                lastTime = true;
+            }
         }
-        
+*/
         if(Math.abs(right.getCurrentPosition()) >= distance){
             right.setPower(0.0);
             left.setPower(0.0);
-            lastTime = true;
+           ;lastTime = true;
+        }
         }
     }
 
@@ -181,7 +201,7 @@ public class Autonomous extends HelperOpMode{
 
 
 
-            climberElbow.setPosition(CLIMBER_ELBOW);
+            //climberElbow.setPosition(CLIMBER_ELBOW);
 
             /*if (sensorRGB.blue() > 355) {
                 buttonRight.setPosition(BUTTON_RIGHT);
@@ -199,26 +219,37 @@ public class Autonomous extends HelperOpMode{
     }
 
 
-    public void turn(boolean direction, double angle){
-        if (firstTime) {
-            setupEncoders(left, true);
+    public void turn(double angle){
+        if (firstTime){
             setupEncoders(right, true);
-            if (direction) {
-                left.setPower(.15);
-                right.setPower(-.15);
-            } else {
-                left.setPower(-0.15);
-                right.setPower(0.15);
-            }
+            setupEncoders(left, true);
+            yawPIDController.setSetpoint(angle);
             firstTime = false;
         }
-        if (navx_device.getYaw()> angle) {
-            left.setPower(0.0);
-            right.setPower(0.0);
-            lastTime = true;
-        }
+        if (!lastTime && yawPIDController.getSetpoint() == angle) {
+            if (yawPIDController.isNewUpdateAvailable(yawPIDResult)) {
+                if (yawPIDResult.isOnTarget()) {
+                    left.setPower (0);
+                    right.setPower(0);
+                    lastTime = true;
+                    telemetry.addData("Motor Output", df.format(0.00));
+                } else {
+                    double output = yawPIDResult.getOutput();
+                    left.setPower(output);
+                    right.setPower(-output);
+                    telemetry.addData("Motor Output", df.format(output) + ", " +
+                            df.format(-output));
 
+                }
+            } else {
+                /* No sensor update has been received since the last time  */
+                /* the loop() function was invoked.  Therefore, there's no */
+                /* need to update the motors at this time.                 */
+            }
+
+        }
     }
+
 
     public void stop (){
         resetEncoders();
@@ -228,22 +259,22 @@ public class Autonomous extends HelperOpMode{
 
         switch(state){
             case 1:
-                driveStraight(convertDistanceToTicks(STARTING_MOVE), -.3);
-                climberRotate.setPosition(.3);
+                driveStraight(convertDistanceToTicks(STARTING_MOVE), -.3, false);
+                //climberRotate.setPosition(.3);
                 if (lastTime){
                     resetEncoders();
                     resetNavx();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) < navxReset ){
+                    if (right.getCurrentPosition()== 0  ){
                         resetState();
                         state++;
                     }
                 }
                 break;
             case 2:
-                turn(true, 40.0);
+                turn(45.0);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) < navxReset ){
+                    if (right.getCurrentPosition()== 0){
                         resetState();
                         state++;
                     }
@@ -251,27 +282,29 @@ public class Autonomous extends HelperOpMode{
                 break;
 
             case 3:
-                driveStraight(convertDistanceToTicks(MOVE_TO_BASKET), -.3);
+                driveStraight(convertDistanceToTicks(MOVE_TO_BASKET), -.3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) <navxReset ){
+                    if (right.getCurrentPosition()== 0 ){
+                        resetState();
                         state++;
                     }
                 }
                 break;
 
             case 4:
-                beaconScoring();
+                state++;
                 break;
 
             case 5:
                 if (firstTime){
                     resetState();
                 }
-                driveStraight(convertDistanceToTicks(MOVE_FROM_BASKET), .3);
+                driveStraight(convertDistanceToTicks(MOVE_FROM_BASKET), .3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) <navxReset ){
+                    if (right.getCurrentPosition()== 0  ){
+                        resetState();
                         state++;
                     }
                 }
@@ -281,10 +314,11 @@ public class Autonomous extends HelperOpMode{
                 if (firstTime){
                     resetState();
                 }
-                turn(true, 90.0);
+                turn(135.0);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) <navxReset ){
+                    if (right.getCurrentPosition()== 0  ){
+                        resetState();
                         state++;
                     }
                 }
@@ -294,18 +328,19 @@ public class Autonomous extends HelperOpMode{
                 if (firstTime){
                     resetState();
                 }
-                driveStraight(convertDistanceToTicks(MOVE_TO_PARK), -.3);
+                driveStraight(convertDistanceToTicks(MOVE_TO_PARK), -.3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 && Math.abs(navx_device.getYaw()) <navxReset ){
+                    if (right.getCurrentPosition()== 0  ){
+                        resetState();
                         state++;
                     }
                 }
                 break;
 
             case 8:
-                /*left.setPower(0.0);
-                right.setPower(0.0);*/
+                left.setPower(0.0);
+                right.setPower(0.0);
                 System.currentTimeMillis();
 
         }
@@ -314,6 +349,7 @@ public class Autonomous extends HelperOpMode{
         telemetry.addData("Current Position: " + right.getCurrentPosition(), "Target Position: " + right.getTargetPosition());
         telemetry.addData("Current Position L: " + left.getCurrentPosition(), "Target Position: " + left.getTargetPosition());
         telemetry.addData("" + navx_device.getYaw(), "Target: " + yawPIDController.getSetpoint());
+        telemetry.addData(left.getPower() + "", right.getPower());
 
     }
 }

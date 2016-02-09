@@ -79,12 +79,14 @@ public class AdafruitRGBExample extends LinearOpMode {
   @Override
   public void runOpMode() throws InterruptedException {
 
+
+
     // write some device information (connection info, name and type)
     // to the log file.
     hardwareMap.logDevices();
 
     // get a reference to our DeviceInterfaceModule object.
-    cdim = hardwareMap.deviceInterfaceModule.get("dim");
+    cdim = hardwareMap.deviceInterfaceModule.get("DIM");
 
     // set the digital channel to output mode.
     // remember, the Adafruit sensor is actually two devices.

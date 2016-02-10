@@ -15,10 +15,6 @@ import java.text.DecimalFormat;
  * Created by MthSci.Student on 12/21/2015.
  */
 public class Autonomous extends HelperOpMode{
-    //Motor Objects
-    DcMotor right, left;
-
-    Servo buttonRight, buttonLeft, climberElbow, linearLift, climberRotate, climberServoLeft, climberServoRight, colorSensorRight, colorSensorLeft;
 
     ColorSensor sensorRGB;
 
@@ -45,6 +41,12 @@ public class Autonomous extends HelperOpMode{
     boolean lastTime = false;
     int state = 1;
     double navxReset = .05;
+
+    double ROTATE_IN = 0.7;
+    double ROTATE_OUT = 0.4;
+    double ELBOW_DOWN = 0.2;
+    double ELBOW_UP = 1.0;
+
     //Navx variables
     private AHRS navx_device;
     private navXPIDController yawPIDController;
@@ -68,27 +70,28 @@ public class Autonomous extends HelperOpMode{
     }
 
     public void init (){
-        right = setupMotor("Right", false);
-        left = setupMotor("Left", true);
+        motorRight = setupMotor("Right", true);
+        motorLeft = setupMotor("Left", false);
 
         climberServoLeft = hardwareMap.servo.get("climberServoLeft");
         climberServoRight = hardwareMap.servo.get("climberServoRight");
         climberServoLeft.setPosition(0.0);
         climberServoRight.setPosition(0.9);
-        buttonRight = hardwareMap.servo.get("buttonRight");
-        buttonLeft = hardwareMap.servo.get("buttonLeft");
-        buttonLeft.setPosition(0.0);
-        buttonRight.setPosition(0.0);
+        colorSensorRight = hardwareMap.servo.get("buttonRight");
+        colorSensorLeft = hardwareMap.servo.get("buttonLeft");
+        colorSensorLeft.setPosition(0.0);
+        colorSensorRight.setPosition(0.0);
         linearLift = hardwareMap.servo.get("linearLift");
         linearLift.setPosition(0.0);
         climberRotate = hardwareMap.servo.get("climberRotate");
-        climberRotate.setPosition(0.0);
         climberElbow = hardwareMap.servo.get("climberElbow");
-        climberElbow.setPosition(1.0);
+        climberRotate.setPosition(ROTATE_IN);
+        climberElbow.setPosition(ELBOW_DOWN);
+
         colorSensorLeft = hardwareMap.servo.get("colorSensorLeft");
-        colorSensorLeft.setPosition(0.0);
+
         colorSensorRight = hardwareMap.servo.get("colorsensorRight");
-        colorSensorRight.setPosition(0.0);
+
         AnalogInput distance = hardwareMap.analogInput.get("test");
         distance.getValue();
         cdim = hardwareMap.deviceInterfaceModule.get("DIM");
@@ -141,37 +144,37 @@ public class Autonomous extends HelperOpMode{
     }
 
     public void resetEncoders (){
-        resetEncoders(left);
-        resetEncoders(right);
+        resetEncoders(motorLeft);
+        resetEncoders(motorRight);
         resetNavx();
     }
 
     public void driveStraight (int distance, double speed, boolean useOds) {
         if (firstTime) {
 
-            setupEncoders(right, true);
-            setupEncoders(left, true);
+            setupEncoders(motorRight, true);
+            setupEncoders(motorLeft, true);
 
             yawPIDController.setSetpoint(0);
 
-            right.setTargetPosition(distance);
-            left.setTargetPosition(distance);
+            motorRight.setTargetPosition(distance);
+            motorLeft.setTargetPosition(distance);
 
-            right.setPower(speed);
-            left.setPower(speed);
+            motorRight.setPower(speed);
+            motorLeft.setPower(speed);
             firstTime = false;
         }
         if (!lastTime && yawPIDController.getSetpoint() == 0) {
             if (yawPIDController.isNewUpdateAvailable(yawPIDResult)) {
                 if (yawPIDResult.isOnTarget()) {
-                    left.setPower(speed);
-                    right.setPower(speed);
+                    motorLeft.setPower(speed);
+                    motorRight.setPower(speed);
                     telemetry.addData("Motor Output", df.format(speed) + ", " +
                             df.format(speed));
                 } else {
                     double output = yawPIDResult.getOutput();
-                    left.setPower(limit(speed + output));
-                    right.setPower(limit(speed - output));
+                    motorLeft.setPower(limit(speed + output));
+                    motorRight.setPower(limit(speed - output));
                     telemetry.addData("Motor Output", df.format(limit(speed + output)) + ", " +
                             df.format(limit(speed - output)));
                 }
@@ -185,9 +188,9 @@ public class Autonomous extends HelperOpMode{
             }
         }
 */
-        if(Math.abs(right.getCurrentPosition()) >= distance){
-            right.setPower(0.0);
-            left.setPower(0.0);
+        if(Math.abs(motorRight.getCurrentPosition()) >= distance){
+            motorRight.setPower(0.0);
+            motorLeft.setPower(0.0);
            ;lastTime = true;
         }
         }
@@ -221,22 +224,22 @@ public class Autonomous extends HelperOpMode{
 
     public void turn(double angle){
         if (firstTime){
-            setupEncoders(right, true);
-            setupEncoders(left, true);
+            setupEncoders(motorRight, true);
+            setupEncoders(motorLeft, true);
             yawPIDController.setSetpoint(angle);
             firstTime = false;
         }
         if (!lastTime && yawPIDController.getSetpoint() == angle) {
             if (yawPIDController.isNewUpdateAvailable(yawPIDResult)) {
                 if (yawPIDResult.isOnTarget()) {
-                    left.setPower (0);
-                    right.setPower(0);
+                    motorLeft.setPower (0);
+                    motorRight.setPower(0);
                     lastTime = true;
                     telemetry.addData("Motor Output", df.format(0.00));
                 } else {
                     double output = yawPIDResult.getOutput();
-                    left.setPower(output);
-                    right.setPower(-output);
+                    motorLeft.setPower(output);
+                    motorRight.setPower(-output);
                     telemetry.addData("Motor Output", df.format(output) + ", " +
                             df.format(-output));
 
@@ -260,21 +263,20 @@ public class Autonomous extends HelperOpMode{
         switch(state){
             case 1:
                 driveStraight(convertDistanceToTicks(STARTING_MOVE), -.3, false);
-                //climberRotate.setPosition(.3);
                 if (lastTime){
                     resetEncoders();
                     resetNavx();
-                    if (right.getCurrentPosition()== 0  ){
+                    if (motorRight.getCurrentPosition()== 0  ){
                         resetState();
                         state++;
                     }
                 }
                 break;
             case 2:
-                turn(45.0);
+                turn(FORTY_FIVE);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0){
+                    if (motorRight.getCurrentPosition()== 0){
                         resetState();
                         state++;
                     }
@@ -285,7 +287,7 @@ public class Autonomous extends HelperOpMode{
                 driveStraight(convertDistanceToTicks(MOVE_TO_BASKET), -.3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0 ){
+                    if (motorRight.getCurrentPosition()== 0 ){
                         resetState();
                         state++;
                     }
@@ -303,7 +305,7 @@ public class Autonomous extends HelperOpMode{
                 driveStraight(convertDistanceToTicks(MOVE_FROM_BASKET), .3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0  ){
+                    if (motorRight.getCurrentPosition()== 0  ){
                         resetState();
                         state++;
                     }
@@ -314,10 +316,10 @@ public class Autonomous extends HelperOpMode{
                 if (firstTime){
                     resetState();
                 }
-                turn(135.0);
+                turn(FORTY_FIVE + NINETY);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0  ){
+                    if (motorRight.getCurrentPosition()== 0  ){
                         resetState();
                         state++;
                     }
@@ -331,7 +333,7 @@ public class Autonomous extends HelperOpMode{
                 driveStraight(convertDistanceToTicks(MOVE_TO_PARK), -.3, false);
                 if (lastTime) {
                     resetEncoders();
-                    if (right.getCurrentPosition()== 0  ){
+                    if (motorRight.getCurrentPosition()== 0  ){
                         resetState();
                         state++;
                     }
@@ -339,17 +341,17 @@ public class Autonomous extends HelperOpMode{
                 break;
 
             case 8:
-                left.setPower(0.0);
-                right.setPower(0.0);
+                motorLeft.setPower(0.0);
+                motorRight.setPower(0.0);
                 System.currentTimeMillis();
 
         }
         //telemetry.clearData();
         telemetry.addData("state: ", state);
-        telemetry.addData("Current Position: " + right.getCurrentPosition(), "Target Position: " + right.getTargetPosition());
-        telemetry.addData("Current Position L: " + left.getCurrentPosition(), "Target Position: " + left.getTargetPosition());
+        telemetry.addData("Current Position: " + motorRight.getCurrentPosition(), "Target Position: " + motorRight.getTargetPosition());
+        telemetry.addData("Current Position L: " + motorLeft.getCurrentPosition(), "Target Position: " + motorLeft.getTargetPosition());
         telemetry.addData("" + navx_device.getYaw(), "Target: " + yawPIDController.getSetpoint());
-        telemetry.addData(left.getPower() + "", right.getPower());
+        telemetry.addData(motorLeft.getPower() + "", motorRight.getPower());
 
     }
 }

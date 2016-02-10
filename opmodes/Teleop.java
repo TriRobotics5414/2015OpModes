@@ -13,43 +13,6 @@ import com.qualcomm.robotcore.util.Range;
  */
 public class Teleop extends HelperOpMode {
 
-    //Motor object variables
-    DcMotor motorRight, motorLeft, spinner, lift, winch;
-
-    //Servo object variables
-    Servo linearLift, linearBlock, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow, colorSensorRight, colorSensorLeft;
-
-
-    final static double LIFT_DELTA = .001;
-
-    //Motor power variables
-    double FORWARD_COLLECTOR_POWER = 1.0;
-    double BACKWARD_COLLECTOR_POWER = -1.0;
-    double FORWARD_SCORER_POWER = 1.0;
-    double BACKWARD_SCORER_POWER = -1.0;
-    double UP_LIFT_POWER = 1.0;
-    double DOWN_LIFT_POWER = -1.0;
-
-    //Servo position variables
-    double LINEAR_LIFT_UP = .7;
-    double LINEAR_LIFT_DOWN = .2;
-    double LEFT_CLIMBER_UP = 0.0;
-    double LEFT_CLIMBER_DOWN = 1;
-    double RIGHT_CLIMBER_UP = .9;
-    double RIGHT_CLIMBER_DOWN = 0.0;
-    double CHURRO_UP = .1;
-    double CHURRO_DOWN = .8;
-    double LEFT_COLOR_UP = 0.0;
-    double RIGHT_COLOR_UP = 0.9;
-    double ROTATE_IN = 0.7;
-    double ROTATE_OUT = 0.4;
-    double ELBOW_DOWN = 0.2;
-    double ELBOW_UP = 1.0;
-
-    double liftPosition = 0.0;
-    double linearBlockPosition = 0.0;
-
-
 
     /**
      * Constructor
@@ -66,34 +29,7 @@ public class Teleop extends HelperOpMode {
      */
     @Override
     public void init() {
-
-
-        motorRight = hardwareMap.dcMotor.get("Right");
-        motorLeft = hardwareMap.dcMotor.get("Left");
-        motorRight.setMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
-        motorLeft.setMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
-        motorLeft.setDirection(DcMotor.Direction.REVERSE);
-
-        spinner = hardwareMap.dcMotor.get("Spinner");
-        spinner.setDirection(DcMotor.Direction.REVERSE);
-        lift = hardwareMap.dcMotor.get("Lift");
-        winch = hardwareMap.dcMotor.get("Winch");
-
-        linearLift = hardwareMap.servo.get("linearLift");
-        linearBlock = hardwareMap.servo.get("linearBlock");
-        climberServoLeft = hardwareMap.servo.get("climberServoLeft");
-        climberServoLeft.setDirection(Servo.Direction.REVERSE);
-        climberServoRight = hardwareMap.servo.get("climberServoRight");
-        churro = hardwareMap.servo.get("churro");
-        churro.setPosition(CHURRO_UP);
-        climberRotate = hardwareMap.servo.get("climberRotate");
-        climberRotate.setPosition(ROTATE_IN);
-        climberElbow = hardwareMap.servo.get("climberElbow");
-        climberElbow.setPosition(ELBOW_DOWN);
-        colorSensorLeft = hardwareMap.servo.get("colorSensorLeft");
-        colorSensorLeft.setPosition(LEFT_COLOR_UP);
-        colorSensorRight = hardwareMap.servo.get("colorSensorRight");
-        colorSensorRight.setPosition(RIGHT_COLOR_UP);
+        super.init();
     }
 
     public double scorerMovement(){
@@ -166,6 +102,9 @@ public class Teleop extends HelperOpMode {
             currentValue = LEFT_CLIMBER_UP;
         else if (gamepad1.dpad_right)
             currentValue = LEFT_CLIMBER_DOWN;
+        else if (gamepad1.start){
+            currentValue = LEFT_CLIMBER_MID;
+        }
         return currentValue;
     }
     public double climberRightMovement () {
@@ -176,7 +115,9 @@ public class Teleop extends HelperOpMode {
         }
         else if (gamepad1.right_stick_button) {
             currentValue = RIGHT_CLIMBER_DOWN;
-            return currentValue;
+        }
+        else if (gamepad1.left_stick_button && gamepad1.right_stick_button) {
+            currentValue = RIGHT_CLIMBER_MID;
         }
         return currentValue;
     }

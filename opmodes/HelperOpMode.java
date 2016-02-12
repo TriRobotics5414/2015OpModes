@@ -2,6 +2,8 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 
 import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.AnalogInput;
+import com.qualcomm.robotcore.hardware.AnalogOutput;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
@@ -51,18 +53,20 @@ public class HelperOpMode extends OpMode
     double CHURRO_DOWN = .8;
     double LEFT_COLOR_UP = 0.0;
     double RIGHT_COLOR_UP = 0.9;
+    double LEFT_COLOR_DOWN = .8;
+    double RIGHT_COLOR_DOWN = .2;
     double ROTATE_IN = 0.7;
     double ROTATE_OUT = 0.4;
     double ELBOW_DOWN = 0.2;
     double ELBOW_UP = 1.0;
 
     ColorSensor sensorRGB;
-
+    AnalogInput ir;
     OpticalDistanceSensor ods;
 
     //Encoder Move Distances
-    int STARTING_MOVE = 101;
-    int MOVE_TO_BASKET = 24;
+    int STARTING_MOVE = 110;
+    int MOVE_TO_BASKET = 18;
     int MOVE_FROM_BASKET = 1;
     int MOVE_TO_RAMP = 5;
     int MOVE_TO_PARK = 21;
@@ -113,6 +117,7 @@ public class HelperOpMode extends OpMode
         climberServoLeft = hardwareMap.servo.get("climberServoLeft");
         climberServoLeft.setDirection(Servo.Direction.REVERSE);
         climberServoRight = hardwareMap.servo.get("climberServoRight");
+        climberServoRight.setPosition(RIGHT_CLIMBER_UP);
         churro = hardwareMap.servo.get("churro");
         churro.setPosition(CHURRO_UP);
         climberRotate = hardwareMap.servo.get("climberRotate");
@@ -123,6 +128,9 @@ public class HelperOpMode extends OpMode
         colorSensorLeft.setPosition(LEFT_COLOR_UP);
         colorSensorRight = hardwareMap.servo.get("colorSensorRight");
         colorSensorRight.setPosition(RIGHT_COLOR_UP);
+
+        ods = hardwareMap.opticalDistanceSensor.get("ods");
+        ir = hardwareMap.analogInput.get("ir");
     }
 
     @Override

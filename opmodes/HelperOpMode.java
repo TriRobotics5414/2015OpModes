@@ -27,7 +27,7 @@ public class HelperOpMode extends OpMode
     DcMotor motorRight, motorLeft, spinner, lift, winch;
 
     //Servo object variables
-    Servo linearLift, linearBlock, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow, colorSensorRight, colorSensorLeft;
+    Servo linearLift, linearBlock, climberServoLeft, climberServoRight, churro, climberRotate, climberElbow, colorServoRight, colorServoLeft;
 
 
     final static double LIFT_DELTA = .001;
@@ -53,14 +53,15 @@ public class HelperOpMode extends OpMode
     double CHURRO_DOWN = .8;
     double LEFT_COLOR_UP = 0.0;
     double RIGHT_COLOR_UP = 0.9;
-    double LEFT_COLOR_DOWN = .8;
-    double RIGHT_COLOR_DOWN = .2;
+    double LEFT_COLOR_DOWN = .85;
+    double RIGHT_COLOR_DOWN = 0;
     double ROTATE_IN = 0.7;
     double ROTATE_OUT = 0.4;
     double ELBOW_DOWN = 0.2;
     double ELBOW_UP = 1.0;
 
-    ColorSensor sensorRGB;
+    ColorSensor adaSensorLeft;
+    ColorSensor mrSensorRight;
     AnalogInput ir;
     OpticalDistanceSensor ods;
 
@@ -85,6 +86,7 @@ public class HelperOpMode extends OpMode
     boolean lastTime = false;
     int state = 1;
     double navxReset = .05;
+    double servoTimer = 0.00;
 
     double liftPosition = 0.0;
     double linearBlockPosition = 0.0;
@@ -124,13 +126,15 @@ public class HelperOpMode extends OpMode
         climberRotate.setPosition(ROTATE_IN);
         climberElbow = hardwareMap.servo.get("climberElbow");
         climberElbow.setPosition(ELBOW_DOWN);
-        colorSensorLeft = hardwareMap.servo.get("colorSensorLeft");
-        colorSensorLeft.setPosition(LEFT_COLOR_UP);
-        colorSensorRight = hardwareMap.servo.get("colorSensorRight");
-        colorSensorRight.setPosition(RIGHT_COLOR_UP);
+        colorServoLeft = hardwareMap.servo.get("colorServoLeft");
+        colorServoLeft.setPosition(LEFT_COLOR_UP);
+        colorServoRight = hardwareMap.servo.get("colorServoRight");
+        colorServoRight.setPosition(RIGHT_COLOR_UP);
 
         ods = hardwareMap.opticalDistanceSensor.get("ods");
         ir = hardwareMap.analogInput.get("ir");
+        adaSensorLeft = hardwareMap.colorSensor.get("adaColor");
+        mrSensorRight = hardwareMap.colorSensor.get("mrColor");
     }
 
     @Override

@@ -57,7 +57,9 @@ public class FtcOpModeRegister implements OpModeRegister {
 
     manager.register("NullOp", NullOp.class);
     manager.register("Teleop", Teleop.class);
-    manager.register("Autonomous", Autonomous.class);
+    manager.register("AutonomousBlue", AutonomousBlue.class);
+
+    manager.register("AutonomousRed", AutonomousRed.class);
       manager.register("SensorTest", SensorTest.class);
     /*manager.register("MatrixK9TeleOp", MatrixK9TeleOp.class);
     manager.register("K9TeleOp", K9TeleOp.class);

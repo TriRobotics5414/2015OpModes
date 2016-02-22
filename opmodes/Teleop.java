@@ -116,7 +116,7 @@ public class Teleop extends HelperOpMode {
         else if (gamepad1.right_stick_button) {
             currentValue = RIGHT_CLIMBER_DOWN;
         }
-        else if (gamepad1.left_stick_button && gamepad1.right_stick_button) {
+        else if (gamepad1.b) {
             currentValue = RIGHT_CLIMBER_MID;
         }
         return currentValue;
@@ -187,8 +187,8 @@ public double climberRotate(){
 
         telemetry.addData("climberServoLeft: " + climberServoLeft.getPosition(), "");
         telemetry.addData("climberServoRight: " + climberServoRight.getPosition(), "");
-        telemetry.addData("colorSensorRight: " + colorSensorRight.getPosition(), "");
-        telemetry.addData("colorSensorLeft: " + colorSensorLeft.getPosition(), "");
+        telemetry.addData("colorServoRight: " + colorServoRight.getPosition(), "");
+        telemetry.addData("colorServoLeft: " + colorServoLeft.getPosition(), "");
 
 
 
